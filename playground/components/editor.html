@@ -14,7 +14,7 @@
 </div>
 
 <script type="module">
-    import { context, effect, emit, debounce } from '../../src/oja.full.js';
+    import { context, effect, emit, debounce } from '../js/oja.js';
 
     const [files, setFiles] = context('files');
     const [activeFile]      = context('active_file');
@@ -112,7 +112,7 @@
         emit('notify:info', 'Formatted');
     }
 
-    import { on } from '../../src/oja.full.js';
+    import { on } from '../js/oja.js';
     on('#format-btn', 'click', () => format(editor));
 
     window.addEventListener('resize', () => editor.refresh());

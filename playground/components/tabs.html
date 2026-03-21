@@ -6,7 +6,7 @@
 </div>
 
 <script type="module">
-    import { context, effect, on, emit } from '../../src/oja.full.js';
+    import { context, effect, on, emit } from '../js/oja.js';
 
     const [files]      = context('files');
     const [activeFile, setActiveFile] = context('active_file');
@@ -111,7 +111,7 @@
     });
 
     // When a file is opened from sidebar, add it to tabs
-    import { listen } from '../../src/oja.full.js';
+    import { listen } from '../js/oja.js';
     listen('file:open', ({ path }) => {
         if (!openTabs.includes(path)) openTabs.push(path);
         setActiveFile(path);

@@ -8,7 +8,7 @@ import {
     emit, listen, on, keys,
     layout, VFS, Out,
     notify, modal,
-} from '../src/oja.full.js';
+} from './oja.js';
 
 // Canonical context keys
 export const [files,       setFiles]       = context('files', {});
@@ -32,7 +32,7 @@ let _blankCache = null;
 async function _fetchBlank() {
     if (_blankCache) return _blankCache;
     try {
-        const res = await fetch('./examples/blank/index.html');
+        const res = await fetch('../../examples/blank/index.html');
         if (res.ok) { _blankCache = await res.text(); return _blankCache; }
     } catch (_) {}
     _blankCache = `<!DOCTYPE html>
@@ -99,6 +99,7 @@ async function init() {
         setupEvents();
         setupResize();
         await loadFromURL();
+        await loadFromQuery();
 
         window.addEventListener('beforeunload', e => {
             if (isDirty()) { e.preventDefault(); e.returnValue = ''; }
@@ -119,7 +120,7 @@ function registerSW() {
     if (!('serviceWorker' in navigator)) return Promise.resolve();
     return new Promise(async (resolve) => {
         try {
-            await navigator.serviceWorker.register('./sw.js');
+            await navigator.serviceWorker.register('./sw.js', { scope: './' });
         } catch (e) {
             console.warn('[playground] SW registration failed', e);
             resolve();
@@ -184,7 +185,7 @@ async function loadExample(dir) {
         setLogs([]);
         history.replaceState(null, '', window.location.pathname + window.location.search);
 
-        const base = `./examples/${dir}/`;
+        const base = `../../examples/${dir}/`;
         let filesToLoad = ['index.html'];
 
         try {
@@ -205,6 +206,14 @@ async function loadExample(dir) {
                 }
             } catch (_) {}
         }));
+
+        // If every fetch failed (examples unreachable), fall back to blank
+        // rather than leaving the workspace with no files and a silent empty state.
+        if (Object.keys(newFiles).length === 0) {
+            const html = await _fetchBlank();
+            newFiles['index.html'] = html;
+            await _vfs.write('index.html', html);
+        }
 
         setFiles(newFiles);
         setActiveFile('index.html');
@@ -337,6 +346,17 @@ async function loadFromURL() {
         history.replaceState(null, '', window.location.pathname + window.location.search);
         notify.success('Project loaded from URL');
     } catch (_) {}
+}
+
+// Load an example named in the ?example= query param — set by landing page links.
+// Runs after loadFromURL so a hash state always takes priority.
+async function loadFromQuery() {
+    const params  = new URLSearchParams(location.search);
+    const example = params.get('example');
+    if (!example) return;
+    // Strip the param immediately so refreshing doesn't reload the example over edits
+    history.replaceState(null, '', window.location.pathname);
+    await loadExample(example);
 }
 
 function setupEffects() {
